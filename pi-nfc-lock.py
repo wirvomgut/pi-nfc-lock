@@ -12,7 +12,7 @@ known_uid_to_name_dict = {}
 
 
 #################
-# METHODS	    #
+# METHODS       #
 #################
 
 def init_logging():
@@ -55,7 +55,7 @@ def on_shutdown():
 
 
 #################
-# INIT		    #
+# INIT          #
 #################
 
 init_logging()
@@ -70,7 +70,7 @@ mifare = nxppy.Mifare()
 log.info("System startup: " + `len(known_uid_to_name_dict)` + " known Uid(s)")
 
 #################
-# LOGIC		    #
+# LOGIC         #
 #################
 
 while True:
