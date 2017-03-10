@@ -57,8 +57,6 @@ def init_logging():
     log.addHandler(fh)
     log.addHandler(eh)
 
-
-
 def parse_allowed_uids():
     with open('accessAllowed.csv', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=';', quotechar='|')
@@ -74,11 +72,12 @@ def signal_handler(signal, frame):
 
 def on_known():
     GPIO.output(38,1)
-    time.sleep(5)
+    time.sleep(config.lock_open_in_seconds)
     GPIO.output(38,0)
+    time.sleep(config.lock_pause_after_open_in_seconds)
 
 def on_unknown():
-    time.sleep(2)
+    time.sleep(config.lock_pause_after_unknown_in_seconds)
 
 def on_shutdown():
     log.info("System shutdown")
