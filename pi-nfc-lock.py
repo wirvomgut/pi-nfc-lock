@@ -48,7 +48,7 @@ def init_logging():
     # create elasticsearch handler
     eh = CMRESHandler(hosts=[{'host': config.elasticsearch_host, 'port': config.elasticsearch_port}],
                            auth_type=CMRESHandler.AuthType.NO_AUTH,
-                           es_index_name="my_python_index")
+                           es_index_name=config.elasticsearch_index)
 
     # link logger formatter and handler
     ch.setFormatter(formatter)
