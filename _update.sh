@@ -6,6 +6,9 @@ then
   apt-get install supervisor;
 fi
 
+# install python deps
+pip install -r requirements.txt
+
 #undo changes
 git reset --hard HEAD
 git pull -u origin master
