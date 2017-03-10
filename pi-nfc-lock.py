@@ -8,8 +8,17 @@ import hashlib
 import subprocess
 import RPi.GPIO as GPIO
 
+from cmreslogging.handlers import CMRESHandler
+from config import Config
+
 log = logging.getLogger("wvg_key")
 known_uid_to_name_dict = {}
+
+#################
+# CONFIG        #
+#################
+configFile = file('pi-nfc-lock.conf')
+config = Config(configFile)
 
 #################
 # CLASSES       #
@@ -36,19 +45,26 @@ def init_logging():
     fh = logging.FileHandler('./wvg-lock.log')
     fh.setLevel(logging.DEBUG)
 
+    # create elasticsearch handler
+    eh = CMRESHandler(hosts=[{'host': config.elasticsearch_host, 'port': config.elasticsearch_port}],
+                           auth_type=CMRESHandler.AuthType.NO_AUTH,
+                           es_index_name="my_python_index")
+
     # link logger formatter and handler
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
     log.addHandler(ch)
     log.addHandler(fh)
+    log.addHandler(eh)
 
-                                  
+
+
 def parse_allowed_uids():
     with open('accessAllowed.csv', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=';', quotechar='|')
         for row in reader:
             known_uid_to_name_dict.update({row[0]: row[1]})
-                
+
 def signal_timeout(signal, frame):
     raise Timeout
 
@@ -66,21 +82,21 @@ def on_unknown():
 
 def on_shutdown():
     log.info("System shutdown")
-    
+
 
 #################
 # INIT          #
 #################
 
 init_logging()
-    
+
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(38, GPIO.OUT)
-    
+
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGALRM, signal_timeout)
 atexit.register(on_shutdown)
-    
+
 parse_allowed_uids()
 
 log.info("System startup: " + `len(known_uid_to_name_dict)` + " known Uid(s)")
@@ -88,7 +104,7 @@ log.info("System startup: " + `len(known_uid_to_name_dict)` + " known Uid(s)")
 #################
 # LOGIC         #
 #################
-    
+
 while True:
     try:
         signal.alarm(3)
