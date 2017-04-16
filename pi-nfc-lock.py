@@ -1,6 +1,7 @@
 import csv
 import logging
 import time
+import socket
 import atexit
 import sys
 import signal
@@ -8,10 +9,11 @@ import hashlib
 import subprocess
 import RPi.GPIO as GPIO
 
-from cmreslogging.handlers import CMRESHandler
+from influxdb import InfluxDBClient
 from config import Config
 
 log = logging.getLogger("wvg_key")
+host = socket.gethostname()
 known_uid_to_name_dict = {}
 
 #################
@@ -45,23 +47,28 @@ def init_logging():
     fh = logging.FileHandler('./wvg-lock.log')
     fh.setLevel(logging.DEBUG)
 
-    # create elasticsearch handler
-    eh = CMRESHandler(hosts=[{'host': config.elasticsearch_host, 'port': config.elasticsearch_port}],
-                           auth_type=CMRESHandler.AuthType.NO_AUTH,
-                           es_index_name=config.elasticsearch_index)
-
     # link logger formatter and handler
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
     log.addHandler(ch)
     log.addHandler(fh)
-    log.addHandler(eh)
 
 def parse_allowed_uids():
     with open('accessAllowed.csv', 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=';', quotechar='|')
         for row in reader:
             known_uid_to_name_dict.update({row[0]: row[1]})
+
+def monitor(uid, user, access):
+    json_body = [
+        {
+          "measurement": "lock_access",
+              "tags": {"host": host},
+              "time": time.ctime(),
+              "fields": {"id" : uid, "user": user, "access": access}
+          }
+        ]
+    client.write_points(json_body)
 
 def signal_timeout(signal, frame):
     raise Timeout
@@ -89,6 +96,8 @@ def on_shutdown():
 
 init_logging()
 
+client = InfluxDBClient(config.influxdb_host, config.influxdb_port, config.influxdb_user, config.influxdb_pass, config.influxdb_name)
+
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(38, GPIO.OUT)
 
@@ -113,10 +122,12 @@ while True:
             if uid in known_uid_to_name_dict.keys():
                 log.info("Access granted for " + known_uid_to_name_dict[uid] + " [" + uid[0:15] + "]")
                 on_known()
+                monitor(uid[0:15], known_uid_to_name_dict[uid], True)
             else:
                 log.warn("No Access " + uid)
                 on_unknown()
+                monitor(uid, "unknown", False)
     except:
         # We do not want an unknown exception to kill our python script.
         log.error("Unexpected error: " + str(sys.exc_info()[0]))
-        time.sleep(60)
+        time.sleep(1)
