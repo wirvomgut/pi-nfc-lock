@@ -11,3 +11,4 @@ urllib3==1.26.5
 falcon==1.1.0
 gunicorn==19.7.1
 influxdb==4.1.0
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
