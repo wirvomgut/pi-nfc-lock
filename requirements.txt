@@ -9,5 +9,5 @@ RPi.GPIO==0.6.3
 supervisor==3.0
 urllib3==1.26.5
 falcon==1.1.0
-gunicorn==19.7.1
+gunicorn==21.2.0
 influxdb==4.1.0
